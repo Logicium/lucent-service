@@ -2,10 +2,14 @@ import { Options, PostgreSqlDriver } from '@mikro-orm/postgresql';
 import { TsMorphMetadataProvider } from '@mikro-orm/reflection';
 import { Migrator } from '@mikro-orm/migrations';
 import { SeedManager } from "@mikro-orm/seeder";
+import * as dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
 
 const config: Options = {
   driver: PostgreSqlDriver,
-  clientUrl: 'postgresql://lucent_database_user:Luc3ntP@ssw0rd!2023@dpg-d01u8c2dbo4c7394va5g-a.oregon-postgres.render.com/lucent_database?sslmode=require',
+  clientUrl: process.env.DATABASE_URL || 'postgresql://lucent_db_user:98kG27xRK8Mgye70C1DQJ3ZLi5OjsZlz@dpg-d0h6s8umcj7s73fi43jg-a.oregon-postgres.render.com/lucent_db',
   extensions: [SeedManager, Migrator],
   entities: ['dist/**/*.entity.js'],
   entitiesTs: ['src/**/*.entity.ts'],
@@ -25,7 +29,11 @@ const config: Options = {
     fileName: (className: string) => className, // seeder file naming convention
   },
   migrations: {
-    dropTables: false
+    path: './dist/migrations',
+    pathTs: './src/migrations',
+    dropTables: false,
+    allOrNothing: true,
+    safe: true
   }
 };
 

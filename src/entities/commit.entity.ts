@@ -10,7 +10,7 @@ export class Commit {
   @Property()
   sha: string;
 
-  @Property()
+  @Property({ type: 'text' })
   message: string;
 
   @Property({ nullable: true })
@@ -25,7 +25,7 @@ export class Commit {
   @ManyToOne(() => Repository)
   repository: Repository;
 
-  @Property({ nullable: true })
+  @Property({ nullable: true, type: 'text' })
   articleContent?: string;
 
   @Property({ default: false })

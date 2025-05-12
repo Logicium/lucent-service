@@ -5,6 +5,7 @@ import { Repository } from '../entities/repository.entity';
 import { User } from '../entities/user.entity';
 import axios from 'axios';
 import { ConfigService } from '@nestjs/config';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 @Injectable()
 export class CommitService {
@@ -68,7 +69,11 @@ export class CommitService {
   }
 
   async getCommitById(id: string): Promise<Commit> {
-    return this.em.findOne(Commit, { id });
+    const commit = await this.em.findOne(Commit, { id });
+    if (!commit) {
+      throw new NotFoundException(`Commit with ID ${id} not found`);
+    }
+    return commit;
   }
 
   async generateArticleForCommit(commitId: string, userId: string): Promise<Commit> {
@@ -106,16 +111,56 @@ export class CommitService {
   }
 
   private async generateArticleWithGemini(commitMessage: string, codeChanges: string): Promise<string> {
-    // This is a placeholder for the actual Gemini API integration
-    // In a real implementation, this would call the Google Gemini API
+    try {
+      const apiKey = this.configService.get<string>('GEMINI_API_KEY');
+      if (!apiKey) {
+        throw new Error('GEMINI_API_KEY is not defined in environment variables');
+      }
 
-    // For now, return a placeholder article
-    return `# How-to Article: ${commitMessage}\n\n` +
-      `This article explains the changes made in this commit.\n\n` +
-      `## Code Changes\n\n` +
-      `\`\`\`diff\n${codeChanges}\n\`\`\`\n\n` +
-      `## Explanation\n\n` +
-      `This section would contain an AI-generated explanation of the code changes.`;
+      // Initialize the Gemini API client
+      const genAI = new GoogleGenerativeAI(apiKey);
+
+      // Use the gemini-2.0-flash model as specified
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+
+      // Prepare the prompt for generating the article
+      const prompt = `
+      You are a technical writer creating a how-to article based on a Git commit.
+
+      Commit Message: ${commitMessage}
+
+      Code Changes:
+      \`\`\`diff
+      ${codeChanges}
+      \`\`\`
+
+      Please generate a comprehensive how-to article that:
+      1. Has a clear title based on the commit message
+      2. Explains what the code changes do in a clear, concise manner
+      3. Provides step-by-step instructions on how to use the feature or fix that was implemented
+      4. Includes code examples where appropriate
+      5. Uses markdown formatting for better readability
+
+      Format the article with proper markdown headings, code blocks, and sections.
+      `;
+
+      // Generate content
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+
+      return text;
+    } catch (error) {
+      console.error('Error generating article with Gemini:', error);
+
+      // Fallback to a basic article if the API call fails
+      return `# How-to Article: ${commitMessage}\n\n` +
+        `This article explains the changes made in this commit.\n\n` +
+        `## Code Changes\n\n` +
+        `\`\`\`diff\n${codeChanges}\n\`\`\`\n\n` +
+        `## Explanation\n\n` +
+        `[Error generating AI explanation. Please try again later.]`;
+    }
   }
 
   async updateArticleContent(commitId: string, articleContent: string, userId: string): Promise<Commit> {

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { EntityManager } from '@mikro-orm/core';
@@ -68,6 +68,10 @@ export class GithubAuthService {
   }
 
   async validateUser(userId: string): Promise<User> {
-    return this.em.findOne(User, { id: userId });
+    const user = await this.em.findOne(User, { id: userId });
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+    return user;
   }
 }

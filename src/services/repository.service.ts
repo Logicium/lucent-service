@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { EntityManager } from '@mikro-orm/core';
 import { Repository } from '../entities/repository.entity';
 import { User } from '../entities/user.entity';
@@ -11,11 +11,11 @@ export class RepositoryService {
   async getUserRepositories(user: User): Promise<Repository[]> {
     // First check if we have repositories for this user in our database
     const existingRepos = await this.em.find(Repository, { owner: user });
-    
+
     if (existingRepos.length > 0) {
       return existingRepos;
     }
-    
+
     // If not, fetch from GitHub API
     return this.fetchAndSaveUserRepositories(user);
   }
@@ -56,7 +56,11 @@ export class RepositoryService {
   }
 
   async getRepositoryById(id: string): Promise<Repository> {
-    return this.em.findOne(Repository, { id });
+    const repository = await this.em.findOne(Repository, { id });
+    if (!repository) {
+      throw new NotFoundException(`Repository with ID ${id} not found`);
+    }
+    return repository;
   }
 
   async activateRepository(id: string, userId: string): Promise<Repository> {
