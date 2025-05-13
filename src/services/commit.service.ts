@@ -247,6 +247,53 @@ export class CommitService {
           `;
           break;
 
+        case 'review':
+          prompt = `
+          You are an experienced software engineer conducting a thorough code review based on a Git commit.
+
+          Commit Message: ${commitMessage}
+
+          Code Changes:
+          \`\`\`diff
+          ${codeChanges}
+          \`\`\`
+
+          Please generate a comprehensive code review that:
+          1. Analyzes the code quality, readability, and maintainability
+          2. Identifies potential bugs, edge cases, or performance issues
+          3. Suggests improvements or alternative approaches where appropriate
+          4. Highlights good practices that should be continued
+          5. Considers security implications if relevant
+          6. Uses markdown formatting for better readability
+
+          Format the review with proper markdown headings, code blocks, and sections.
+          `;
+          break;
+
+        case 'roast':
+          prompt = `
+          You are a witty software engineer delivering a "roast" code review based on a Git commit.
+
+          Commit Message: ${commitMessage}
+
+          Code Changes:
+          \`\`\`diff
+          ${codeChanges}
+          \`\`\`
+
+          Please generate a humorous "roast" code review that:
+          1. Uses humor, wit, sarcasm, and playful exaggeration to deliver critical observations
+          2. Highlights flaws, suboptimal patterns, stylistic issues, or potential bugs in an entertaining manner
+          3. Contains valid technical critique beneath the humor
+          4. Maintains a lighthearted tone while still being educational
+          5. Uses irony (e.g., praising obviously problematic aspects) or relatable developer frustrations
+          6. Uses markdown formatting for better readability
+
+          Remember that a good "roast" is funny but still contains useful feedback that can help improve the code.
+          Format the roast with proper markdown headings, code blocks, and sections.
+          `;
+          break;
+
         case 'article':
         default:
           prompt = `
