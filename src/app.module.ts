@@ -22,7 +22,7 @@ import { CommitController } from './controllers/commit.controller';
     MikroOrmModule.forRoot(),
     MikroOrmModule.forFeature([User, Repository, Commit]),
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'lucent-secret-key',
+      secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '1d' },
     }),
   ],

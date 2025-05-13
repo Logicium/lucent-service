@@ -9,7 +9,7 @@ dotenv.config();
 
 const config: Options = {
   driver: PostgreSqlDriver,
-  clientUrl: process.env.DATABASE_URL || 'postgresql://lucent_db_user:98kG27xRK8Mgye70C1DQJ3ZLi5OjsZlz@dpg-d0h6s8umcj7s73fi43jg-a.oregon-postgres.render.com/lucent_db',
+  clientUrl: process.env.DATABASE_URL,
   extensions: [SeedManager, Migrator],
   entities: ['dist/**/*.entity.js'],
   entitiesTs: ['src/**/*.entity.ts'],

@@ -31,6 +31,40 @@
 $ npm install
 ```
 
+## Environment Variables
+
+This project uses environment variables for configuration to keep sensitive information secure. You must set up these variables before running the application.
+
+1. Create a `.env` file in the root directory of the project
+2. Add the following variables to the file:
+
+```
+# Frontend URL
+FRONTEND_URL=http://localhost:5173
+
+# GitHub OAuth
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+GITHUB_REDIRECT_URI=http://localhost:3000/auth/github/callback
+
+# JWT
+JWT_SECRET=your_jwt_secret
+
+# Database
+DATABASE_URL=postgresql://username:password@hostname:port/database_name
+DB_NAME=your_db_name
+DB_USER=your_db_user
+DB_PASSWORD=your_db_password
+DB_HOST=your_db_host
+
+# Google Gemini API
+GEMINI_API_KEY=your_gemini_api_key
+```
+
+Replace the placeholder values with your actual credentials. **Never commit the `.env` file to version control.**
+
+> **Important**: The application requires these environment variables to function properly. If any required variable is missing, the application will fail to start.
+
 ## Compile and run the project
 
 ```bash

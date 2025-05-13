@@ -20,8 +20,17 @@ export class CommitController {
 
   @UseGuards(JwtAuthGuard)
   @Post(':id/generate-article')
-  async generateArticle(@Param('id') id: string, @Request() req) {
-    return this.commitService.generateArticleForCommit(id, req.user.userId);
+  async generateArticle(
+    @Param('id') id: string, 
+    @Body() generateArticleDto: { docType: string; forceRegenerate: boolean },
+    @Request() req
+  ) {
+    return this.commitService.generateArticleForCommit(
+      id, 
+      req.user.userId, 
+      generateArticleDto.docType || 'article',
+      generateArticleDto.forceRegenerate || false
+    );
   }
 
   @UseGuards(JwtAuthGuard)

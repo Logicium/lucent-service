@@ -76,7 +76,12 @@ export class CommitService {
     return commit;
   }
 
-  async generateArticleForCommit(commitId: string, userId: string): Promise<Commit> {
+  async generateArticleForCommit(
+    commitId: string, 
+    userId: string, 
+    docType: string = 'article',
+    forceRegenerate: boolean = false
+  ): Promise<Commit> {
     const commit = await this.em.findOne(Commit, { id: commitId }, { populate: ['repository'] });
     const user = await this.em.findOne(User, { id: userId });
 
@@ -84,8 +89,9 @@ export class CommitService {
       throw new Error('Commit not found or not owned by user');
     }
 
-    if (commit.articleGenerated) {
-      return commit; // Article already generated
+    // If article is already generated and we're not forcing regeneration, return the existing article
+    if (commit.articleGenerated && !forceRegenerate) {
+      return commit;
     }
 
     // Fetch commit details including code changes
@@ -99,8 +105,8 @@ export class CommitService {
 
     const codeChanges = response.data;
 
-    // Generate article using Google Gemini API (placeholder for now)
-    const articleContent = await this.generateArticleWithGemini(commit.message, codeChanges);
+    // Generate article using Google Gemini API with the specified document type
+    const articleContent = await this.generateArticleWithGemini(commit.message, codeChanges, docType);
 
     // Update commit with generated article
     commit.articleContent = articleContent;
@@ -110,7 +116,11 @@ export class CommitService {
     return commit;
   }
 
-  private async generateArticleWithGemini(commitMessage: string, codeChanges: string): Promise<string> {
+  private async generateArticleWithGemini(
+    commitMessage: string, 
+    codeChanges: string, 
+    docType: string = 'article'
+  ): Promise<string> {
     try {
       const apiKey = this.configService.get<string>('GEMINI_API_KEY');
       if (!apiKey) {
@@ -123,26 +133,143 @@ export class CommitService {
       // Use the gemini-2.0-flash model as specified
       const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
-      // Prepare the prompt for generating the article
-      const prompt = `
-      You are a technical writer creating a how-to article based on a Git commit.
+      // Select the appropriate prompt based on the document type
+      let prompt = '';
 
-      Commit Message: ${commitMessage}
+      switch (docType) {
+        case 'api':
+          prompt = `
+          You are a technical writer creating API documentation based on a Git commit.
 
-      Code Changes:
-      \`\`\`diff
-      ${codeChanges}
-      \`\`\`
+          Commit Message: ${commitMessage}
 
-      Please generate a comprehensive how-to article that:
-      1. Has a clear title based on the commit message
-      2. Explains what the code changes do in a clear, concise manner
-      3. Provides step-by-step instructions on how to use the feature or fix that was implemented
-      4. Includes code examples where appropriate
-      5. Uses markdown formatting for better readability
+          Code Changes:
+          \`\`\`diff
+          ${codeChanges}
+          \`\`\`
 
-      Format the article with proper markdown headings, code blocks, and sections.
-      `;
+          Please generate comprehensive API documentation in Swagger/OpenAPI style that:
+          1. Has a clear title and description for each endpoint or component
+          2. Lists all parameters, request bodies, and response formats
+          3. Includes example requests and responses
+          4. Documents any authentication requirements
+          5. Uses markdown formatting for better readability
+
+          Format the documentation with proper markdown headings, code blocks, and sections.
+          `;
+          break;
+
+        case 'faq':
+          prompt = `
+          You are a technical writer creating a FAQ document based on a Git commit.
+
+          Commit Message: ${commitMessage}
+
+          Code Changes:
+          \`\`\`diff
+          ${codeChanges}
+          \`\`\`
+
+          Please generate a comprehensive FAQ document that:
+          1. Anticipates common questions users might have about this change
+          2. Provides clear, concise answers to each question
+          3. Covers both basic and advanced usage scenarios
+          4. Includes troubleshooting questions and solutions
+          5. Uses markdown formatting for better readability
+
+          Format the FAQ with proper markdown headings and sections.
+          `;
+          break;
+
+        case 'slides':
+          prompt = `
+          You are a technical writer creating presentation slide content based on a Git commit.
+
+          Commit Message: ${commitMessage}
+
+          Code Changes:
+          \`\`\`diff
+          ${codeChanges}
+          \`\`\`
+
+          Please generate content for a technical presentation that:
+          1. Has a clear title slide and agenda
+          2. Explains the purpose and context of the changes
+          3. Highlights key technical details with code snippets
+          4. Includes bullet points for easy presentation
+          5. Ends with a summary and next steps
+
+          Format the content as a series of slides using markdown, with clear slide breaks and titles.
+          `;
+          break;
+
+        case 'video':
+          prompt = `
+          You are a technical writer creating a video script based on a Git commit.
+
+          Commit Message: ${commitMessage}
+
+          Code Changes:
+          \`\`\`diff
+          ${codeChanges}
+          \`\`\`
+
+          Please generate a comprehensive video script that:
+          1. Has a clear introduction explaining the purpose of the changes
+          2. Walks through the code changes in a logical order
+          3. Explains technical concepts in an accessible way
+          4. Includes cues for when to show code on screen
+          5. Ends with a summary and call to action
+
+          Format the script with clear sections for introduction, main content, and conclusion.
+          `;
+          break;
+
+        case 'release':
+          prompt = `
+          You are a technical writer creating release notes based on a Git commit.
+
+          Commit Message: ${commitMessage}
+
+          Code Changes:
+          \`\`\`diff
+          ${codeChanges}
+          \`\`\`
+
+          Please generate comprehensive release notes that:
+          1. Summarize the changes in a clear, concise manner
+          2. List new features, improvements, and bug fixes
+          3. Include any breaking changes and migration instructions
+          4. Mention any dependencies that were added or updated
+          5. Uses markdown formatting for better readability
+
+          Format the release notes with proper markdown headings, bullet points, and sections.
+          `;
+          break;
+
+        case 'article':
+        default:
+          prompt = `
+          You are a technical writer creating a how-to article based on a Git commit.
+
+          Commit Message: ${commitMessage}
+
+          Code Changes:
+          \`\`\`diff
+          ${codeChanges}
+          \`\`\`
+
+          Please generate a comprehensive how-to article that:
+          1. Has a clear title based on the commit message
+          2. Explains what the code changes do in a clear, concise manner
+          3. Provides step-by-step instructions on how to use the feature or fix that was implemented
+          4. Includes code examples where appropriate
+          5. Uses markdown formatting for better readability
+
+          Format the article with proper markdown headings, code blocks, and sections.
+          `;
+          break;
+      }
 
       // Generate content
       const result = await model.generateContent(prompt);
